@@ -15,7 +15,7 @@ sensor.set_brightness(1)
 sensor.set_contrast(2)
 clock = time.clock()
 
-uart = UART(3, 115200)
+uart = UART(3, 115200) # defualt pins: TX=Pin P4, RX=Pin P5
 
 BLACK_THRESHOLD = (0, 45)
 
