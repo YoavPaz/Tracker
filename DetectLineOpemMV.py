@@ -4,7 +4,7 @@ from pyb import UART
 # ---------- Camera setup ----------
 sensor.reset()
 sensor.set_pixformat(sensor.RGB565)
-sensor.set_framesize(sensor.QVGA)   # 320x240 
+sensor.set_framesize(sensor.QVGA)   # 320x240 (much better)
 sensor.set_auto_gain(True)
 sensor.set_auto_whitebal(True)
 sensor.skip_frames(time=2000)
@@ -15,7 +15,7 @@ sensor.set_brightness(1)
 sensor.set_contrast(2)
 clock = time.clock()
 
-uart = UART(3, 115200) # defualt pins: TX=Pin P4, RX=Pin P5
+uart = UART(3, 115200)
 
 BLACK_THRESHOLD = (0, 45)
 
@@ -30,6 +30,10 @@ BOTTOM_OFFSET = 5
 X_TOLERANCE = 50
 
 points = []
+
+# slope help
+SLOPE_THREASHOLD = 20
+SLOPE_HELP_NUM = 1.5
 
 while True:
     clock.tick()
@@ -66,6 +70,7 @@ while True:
 
             img.draw_cross(cx, cy, color=(0, 255, 255))  # cyan cross
 
+    # draw line between points for better visual
     for i in range(len(points) - 1):
         img.draw_line(
             points[i][0], points[i][1],
@@ -75,6 +80,14 @@ while True:
 
     if points:
         error = points[0][0] - CENTER_X
+        # calcualte slope between point 0 and last point:
+        first_point = points[0]
+        last_point = points[NUM_SLICES-1]
+        slope = (first_point[1] - last_point[1]) / (first_point[0] - last_point[0])
+
+        if slope > SLOPE_THREASHOLD:
+            error *= SLOPE_HELP_NUM
+
         uart.write("%d\n" % error)
         print(f"Results: error: {error}, fps: {clock.fps()}")
     else:
