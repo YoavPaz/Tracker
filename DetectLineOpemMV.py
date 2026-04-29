@@ -1,6 +1,11 @@
 import sensor, image, time
 from pyb import UART
 import math
+from pyb import LED
+
+red = LED(1)
+green = LED(2)
+blue = LED(3)
 
 # ---------- Camera setup ----------
 sensor.reset()
@@ -37,7 +42,8 @@ BOTTOM_OFFSET = 20
 X_TOLERANCE = 100
 
 DIS_THREASHOLD = 120
-DIS_HELP_NUM = 1.5
+DIS_HELP_NUM = 2
+green_sent = False
 
 # ---------- State ----------
 use_green_override = False
@@ -110,7 +116,7 @@ while True:
         ratio = b.w() / b.h()
         #print("Green")
 
-        if 0.7 < ratio < 1.4 and b.area() > 200:
+        if 1 < ratio < 1.4 and b.area() > 200:
             found_green = True
             cx = b.cx()
             cy = b.cy()
@@ -156,10 +162,6 @@ while True:
                 img.draw_cross(best.cx(), best.cy(), color=(255, 0, 0))
                 img.draw_rectangle(best.rect(), color=(255, 0, 0))
 
-                if not use_green_override:
-                    uart.write("1100\n")
-                    print("FORWARD")
-
                 use_green_override = True
 
     # =========================================================
@@ -173,13 +175,13 @@ while True:
     # =========================================================
     if use_green_override and override_points:
 
-        # FOLLOW GREEN-DIRECTED LINE
-        error = override_points[0][0] - CENTER_X
-        uart.write("%d\n" % error)
+        if not green_sent:
+            uart.write("1001\n" if direction == 1 else "1002\n")
+            green_sent = True
+            print("GREEN SENT")
 
     else:
-
-        # NORMAL LINE FOLLOW
+        green_sent = False
         if points:
 
             error = points[0][0] - CENTER_X
@@ -194,9 +196,14 @@ while True:
 
             if dis > DIS_THREASHOLD:
                 error *= DIS_HELP_NUM
+                print("Helped!")
 
             uart.write("%d\n" % error)
+            blue.on()
+            red.off()
             #print(f"Sending error: {error}, dis: {dis}, passed dis: {dis > DIS_THREASHOLD}")
 
         else:
             uart.write("999\n")
+            red.on()
+            blue.off()
